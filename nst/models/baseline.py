@@ -40,14 +40,16 @@ class Baseline(pl.LightningModule):
             conten_layers = ["conv4_2"]
 
         if style_layers is None:
-            style_layers = ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1']
+            style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
 
-        preprocess = T.Compose([
-            T.ConvertImageDtype(torch.float),
-            T.Resize(image_size),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            T.Lambda(lambda x: x.unsqueeze(0)),
-        ])
+        preprocess = T.Compose(
+            [
+                T.ConvertImageDtype(torch.float),
+                T.Resize(image_size),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                T.Lambda(lambda x: x.unsqueeze(0)),
+            ]
+        )
 
         content_image = preprocess(content_image)
         style_image = preprocess(style_image)
