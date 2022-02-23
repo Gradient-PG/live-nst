@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 import pytorch_lightning as pl
 from typing import List, Tuple
+import torchvision.transforms as T
 
 from nst.losses import ContentLoss, StyleLoss, TotalVariationLoss
 from nst.modules import FeatureExtractor
@@ -34,9 +35,25 @@ class Baseline(pl.LightningModule):
         :param style_layers: list of string names of vgg19 layers to use to compoute style feature maps
         """
         super().__init__()
-        # TODO initialize style and content layers with default value if None
-        # TODO transform input images to match image_size and vgg19 params (normalize to mean = [0.485, 0.456, 0.406] std = [0.229, 0.224, 0.225] and range [0, 1])
-        # TODO add dummy batch dimmension
+
+        if conten_layers is None:
+            conten_layers = ["conv4_2"]
+
+        if style_layers is None:
+            style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
+
+        preprocess = T.Compose(
+            [
+                T.ConvertImageDtype(torch.float),
+                T.Resize(image_size),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                T.Lambda(lambda x: x.unsqueeze(0)),
+            ]
+        )
+
+        content_image = preprocess(content_image)
+        style_image = preprocess(style_image)
+
         # TODO initialize FeatureExtractor and extract features from content and style images
         # TODO initialize ContentLoss, StyleLoss and TotalVariationLoss
         # TODO initialize optimized image with content image
