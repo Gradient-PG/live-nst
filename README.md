@@ -7,5 +7,6 @@ git clone https://github.com/Gradient-PG/live-nst
 cd live-nst
 pip install -r requirements.txt
 pip install -e .
+pre-commit install
 ```
 This will allow you to run examples.
