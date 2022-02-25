@@ -12,25 +12,26 @@ class FeatureExtractor(nn.Module):
         :param style_layers: list of string names of vgg19 layers to use to compute style feature maps
         """
         super().__init__()
-        trained_vgg19 = torch.hub.load('pytorch/vision:v0.10.0', 'vgg19', pretrained=True).features.eval()
+
+        trained_vgg19 = torch.hub.load("pytorch/vision:v0.10.0", "vgg19", pretrained=True).features.eval()
         # written out manually from the vgg19 architecture
         vgg19_indexes = {
-            'conv1_1': 0,
-            'conv1_2': 2,
-            'conv2_1': 5,
-            'conv2_2': 7,
-            'conv3_1': 10,
-            'conv3_2': 12,
-            'conv3_3': 14,
-            'conv3_4': 16,
-            'conv4_1': 19,
-            'conv4_2': 21,
-            'conv4_3': 23,
-            'conv4_4': 25,
-            'conv5_1': 28,
-            'conv5_2': 30,
-            'conv5_3': 32,
-            'conv5_4': 34,
+            "conv1_1": 0,
+            "conv1_2": 2,
+            "conv2_1": 5,
+            "conv2_2": 7,
+            "conv3_1": 10,
+            "conv3_2": 12,
+            "conv3_3": 14,
+            "conv3_4": 16,
+            "conv4_1": 19,
+            "conv4_2": 21,
+            "conv4_3": 23,
+            "conv4_4": 25,
+            "conv5_1": 28,
+            "conv5_2": 30,
+            "conv5_3": 32,
+            "conv5_4": 34,
         }
         coded_content_layers = [(x, "content") for x in content_layers]
         coded_style_layers = [(x, "style") for x in style_layers]
@@ -59,15 +60,15 @@ class FeatureExtractor(nn.Module):
         Pass image through vgg19 and return listed activations.
 
         :param x: input image batch of shape [batch, 3, height, width]
-        :returns: first element of tuple is list of content feature maps and second is list of style feature maps (feature map shape [batch, channels, height, width])
+        :returns: first element of tuple is list of content feature maps and second is list of style feature maps
+         (feature map shape [batch, channels, height, width])
         """
         styles = []
         contents = []
         for feature in self.features:
             x = feature[0](x)
-            if feature[1] == 'style':
+            if feature[1] == "style":
                 styles.append(x)
             else:
                 contents.append(x)
-
         return contents, styles
