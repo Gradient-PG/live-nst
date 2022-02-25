@@ -71,6 +71,3 @@ class FeatureExtractor(nn.Module):
                 contents.append(x)
 
         return contents, styles
-        # TODO pass images through every layer of vgg separately
-        # TODO collect listed style and content activations
-        pass
