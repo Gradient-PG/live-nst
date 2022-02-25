@@ -12,7 +12,7 @@ class FeatureExtractor(nn.Module):
         :param style_layers: list of string names of vgg19 layers to use to compute style feature maps
         """
         super().__init__()
-        trained_vgg19 = torch.hub.load('pytorch/vision:v0.10.0', 'vgg19', pretrained=True).features
+        trained_vgg19 = torch.hub.load('pytorch/vision:v0.10.0', 'vgg19', pretrained=True).features.eval()
         # written out manually from the vgg19 architecture
         vgg19_indexes = {
             'conv1_1': 0,
