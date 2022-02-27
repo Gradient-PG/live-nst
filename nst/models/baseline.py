@@ -56,14 +56,21 @@ class Baseline(pl.LightningModule):
 
         self._feature_extractor = FeatureExtractor(conten_layers, style_layers)
 
-        content_target_features = self._feature_extractor(content_image)
-        self._content_loss = ContentLoss(content_target_features)
+        # content feature maps of content_image without batch dimension
+        target_content_features_maps = self._feature_extractor(content_image)[0]
+        for x in range(len(target_content_features_maps)):
+            target_content_features_maps[x] = target_content_features_maps[x].squeeze(0)
 
-        style_target_features = self._feature_extractor(style_image)
-        self._style_loss = StyleLoss(style_target_features)
+        self._content_loss = ContentLoss(target_content_features_maps)
+
+        # style feature maps of style_image without batch dimension
+        target_style_features_maps = self._feature_extractor(style_image)[1]
+        for x in range(len(target_style_features_maps)):
+            target_style_features_maps[x] = target_style_features_maps[x].squeeze(0)
+
+        self._style_loss = StyleLoss(target_style_features_maps)
 
         self._total_variation_loss = TotalVariationLoss
-
         # TODO initialize optimized image with content image
         self._optimized_image = None
         pass
