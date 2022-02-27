@@ -54,8 +54,16 @@ class Baseline(pl.LightningModule):
         content_image = preprocess(content_image)
         style_image = preprocess(style_image)
 
-        # TODO initialize FeatureExtractor and extract features from content and style images
-        # TODO initialize ContentLoss, StyleLoss and TotalVariationLoss
+        self._feature_extractor = FeatureExtractor(conten_layers, style_layers)
+
+        content_target_features = self._feature_extractor(content_image)
+        self._content_loss = ContentLoss(content_target_features)
+
+        style_target_features = self._feature_extractor(style_image)
+        self._style_loss = StyleLoss(style_target_features)
+
+        self._total_variation_loss = TotalVariationLoss
+
         # TODO initialize optimized image with content image
         self._optimized_image = None
         pass
