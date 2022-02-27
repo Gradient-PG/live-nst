@@ -76,11 +76,16 @@ class Baseline(pl.LightningModule):
         pass
 
     def training_step(self, batch, batch_idx):
-        # TODO extract content and style feature maps from _optimized_image using FeatureExtractor
-        # TODO compute content, style and total variation losses
-        # TODO compute and return weighted sum of losses
+        optimized_image_feature_maps = self._feature_extractor(self._optimized_image)
+
+        content_loss = self._content_loss(optimized_image_feature_maps[0])
+        style_loss = self._style_loss(optimized_image_feature_maps[1])
+        total_variation_loss = self._total_variation_loss(self._optimized_image)
+
+        sum_of_losses = self.content_weight * content_loss + self.style_weight * style_loss
+
         # TODO log losses and _optimized_image to tensorboard
-        pass
+        return sum_of_losses
 
     def configure_optimizers(self):
         # TODO configure Adam optimizer for self._optimized_image
