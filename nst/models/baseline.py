@@ -71,8 +71,8 @@ class Baseline(pl.LightningModule):
         self._style_loss = StyleLoss(target_style_features_maps)
 
         self._total_variation_loss = TotalVariationLoss
-        # TODO initialize optimized image with content image
-        self._optimized_image = None
+        
+        self._optimized_image = content_image
         pass
 
     def training_step(self, batch, batch_idx):
