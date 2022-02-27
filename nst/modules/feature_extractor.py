@@ -37,19 +37,19 @@ class FeatureExtractor(nn.Module):
         coded_style_layers = [(x, "style") for x in style_layers]
         all_layers = sorted(coded_style_layers + coded_content_layers)
 
-        self.features = []
+        self.__features = []
         last_index = 0
 
         for i in range(len(all_layers)):
             # add each needed layer and its type
-            self.features.append((torch.nn.Sequential(), all_layers[i][1]))
+            self.__features.append((torch.nn.Sequential(), all_layers[i][1]))
             # get index
             layer_index = vgg19_indexes[all_layers[i][0]]
 
             for j in range(last_index, layer_index + 1):
                 # adding all layers between last layer up to current one
-                self.features[i][0].training = False
-                self.features[i][0].add_module(str(j), trained_vgg19[j])
+                self.__features[i][0].training = False
+                self.__features[i][0].add_module(str(j), trained_vgg19[j])
             last_index = layer_index + 1
 
         for param in self.parameters():
@@ -65,7 +65,7 @@ class FeatureExtractor(nn.Module):
         """
         styles = []
         contents = []
-        for feature in self.features:
+        for feature in self.__features:
             x = feature[0](x)
             if feature[1] == "style":
                 styles.append(x)
