@@ -14,7 +14,7 @@ class Baseline(pl.LightningModule):
         content_image: torch.tensor,
         style_image: torch.tensor,
         image_size: Tuple[int, int] = (225, 225),
-        learing_rate: float = 1e-1,
+        learning_rate: float = 1e-1,
         content_weight: float = 0.4,
         style_weight: float = 0.4,
         total_variation_weight: float = 0.2,
@@ -71,8 +71,10 @@ class Baseline(pl.LightningModule):
         self._style_loss = StyleLoss(target_style_features_maps)
 
         self._total_variation_loss = TotalVariationLoss
-        
+
         self._optimized_image = content_image
+
+        self._learning_rate = learning_rate
         pass
 
     def training_step(self, batch, batch_idx):
@@ -83,8 +85,7 @@ class Baseline(pl.LightningModule):
         pass
 
     def configure_optimizers(self):
-        # TODO configure Adam optimizer for self._optimized_image
-        pass
+        return torch.optim.Adam(self._optimized_image.parameters(), lr=self._learning_rate)
 
     def train_dataloader(self):
         """Configure dummy dataset with one empty tensor."""
