@@ -130,3 +130,6 @@ dmypy.json
 
 # Pytorch Lightning logs
 lightning_logs/
+
+# IDE files
+.vscode/

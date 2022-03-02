@@ -3,7 +3,7 @@ from typing import List
 
 
 class TotalVariationLoss:
-    def __call__(self, image: torch.tensor) -> torch.tensor:
+    def __call__(self, image: torch.Tensor) -> torch.Tensor:
         """
         Compute total variation loss of the input image.
 
