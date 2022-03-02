@@ -67,7 +67,7 @@ class Baseline(pl.LightningModule):
         target_style_feature_maps = self._feature_extractor(style_image)[1]
         self._style_loss = StyleLoss(target_style_feature_maps)
 
-        self._total_variation_loss = TotalVariationLoss
+        self._total_variation_loss = TotalVariationLoss()
 
         self._optimized_image = content_image
 
