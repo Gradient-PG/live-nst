@@ -29,13 +29,16 @@ class StyleLoss:
 
     @staticmethod  # Gram matrix operation on the input
     def _gram_matrix(x: List[torch.Tensor]) -> torch.Tensor:
-        for feature_map in x:
-            b, ch, height, width = feature_map.size()
-            feature_map.view(b, ch, height * width)
-            Gram = torch.bmm(feature_map, feature_map.transpose(1, 2))  # transpose in the first and second dimension
-            Gram.div_(height * width)
-
-        return Gram
+        Gram = []
+        Computed_gram = torch.empty()
+        for layer in x:
+            b, ch, height, width = layer.size()
+            A = layer.view(b, ch, height * width)
+            B = torch.bmm(A, A.transpose(1, 2))  # transpose in the first and second dimension
+            B.div_(height * width)
+            Gram.append(B)
+        torch.stack(Gram, out=torch.tensor(Computed_gram))
+        return Computed_gram
         """
         Compute gram matrix of given input matrix.
 

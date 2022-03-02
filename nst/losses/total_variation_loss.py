@@ -15,5 +15,3 @@ class TotalVariationLoss:
         :param image: tensor representing input image with shape [batch, channels, height, width]
         :returns: vector of len = batch representing total variation loss
         """
-        # TODO compute total variation loss of the input image
-        pass
