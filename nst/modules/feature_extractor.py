@@ -55,7 +55,7 @@ class FeatureExtractor(nn.Module):
         for param in self.parameters():
             param.requires_grad = False
 
-    def forward(self, x: torch.tensor) -> Tuple[List[torch.tensor], List[torch.tensor]]:
+    def forward(self, x: torch.Tensor) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         """
         Pass image through vgg19 and return listed activations.
 

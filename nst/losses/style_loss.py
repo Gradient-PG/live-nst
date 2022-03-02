@@ -3,7 +3,7 @@ from typing import List
 
 
 class StyleLoss:
-    def __init__(self, style_target_features: List[torch.tensor]):
+    def __init__(self, style_target_features: List[torch.Tensor]):
         """
         Loss between style target feature maps and input image feature maps.
         Computed using gram matrix of the feature maps.
@@ -13,7 +13,7 @@ class StyleLoss:
         # TODO compute gram matrix for each style target feature map
         pass
 
-    def __call__(self, image_features: List[torch.tensor]) -> torch.tensor:
+    def __call__(self, image_features: List[torch.Tensor]) -> torch.Tensor:
         """
         Compute and sum style loss for each feature map of the input image.
 
@@ -25,7 +25,7 @@ class StyleLoss:
         pass
 
     @staticmethod
-    def _gram_matrix(x: torch.tensor) -> torch.tensor:
+    def _gram_matrix(x: torch.Tensor) -> torch.Tensor:
         """
         Compute gram matrix of given input matrix.
 

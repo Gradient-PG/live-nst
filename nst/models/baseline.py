@@ -11,8 +11,8 @@ from nst.modules import FeatureExtractor
 class Baseline(pl.LightningModule):
     def __init__(
         self,
-        content_image: torch.tensor,
-        style_image: torch.tensor,
+        content_image: torch.Tensor,
+        style_image: torch.Tensor,
         image_size: Tuple[int, int] = (225, 225),
         learning_rate: float = 1e-1,
         content_weight: float = 0.4,
@@ -99,7 +99,7 @@ class Baseline(pl.LightningModule):
         return DataLoader(dummy_tensor_dataset)
 
     @property
-    def optimized_image(self) -> torch.tensor:
+    def optimized_image(self) -> torch.Tensor:
         """Return a detached copy of optimized image tensor."""
         # TODO detach optimized image from computational graph, copy to cpu
         # TODO remove dummy batch dimmension and denormalize

@@ -3,7 +3,7 @@ from typing import List
 
 
 class ContentLoss:
-    def __init__(self, content_target_features: List[torch.tensor]):
+    def __init__(self, content_target_features: List[torch.Tensor]):
         """
         Loss between content target feature maps and input image feature maps.
 
@@ -12,7 +12,7 @@ class ContentLoss:
         # TODO initialize content target features field
         pass
 
-    def __call__(self, image_features: List[torch.tensor]) -> torch.tensor:
+    def __call__(self, image_features: List[torch.Tensor]) -> torch.Tensor:
         """
         Compute and sum content loss for each feature map of the input image.
 
