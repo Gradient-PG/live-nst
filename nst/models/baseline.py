@@ -1,8 +1,11 @@
+from asyncore import write
 from typing import List, Tuple
 
 import pytorch_lightning as pl
 import torch
 import torchvision.transforms as T
+from torchvision.transforms.functional import convert_image_dtype
+from torchvision.io import write_jpeg
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -112,6 +115,13 @@ class Baseline(pl.LightningModule):
     @property
     def optimized_image(self) -> torch.Tensor:
         """Return a detached copy of optimized image tensor."""
-        # TODO detach optimized image from computational graph, copy to cpu
-        # TODO remove dummy batch dimmension and denormalize
-        return self._optimized_image
+        detached_image = self._optimized_image.detach().cpu().squeeze(0)
+        return convert_image_dtype(detached_image, dtype=torch.uint8)
+
+    def save_optimized_image(self, path: str) -> None:
+        """
+        Save optimized image at given path in jpg format.
+
+        :param path: path save image at
+        """
+        write_jpeg(self.optimized_image, path)
