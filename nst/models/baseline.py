@@ -41,17 +41,19 @@ class Baseline(pl.LightningModule):
         """
         super().__init__()
 
-        # Load image tensors
+        # load content image tensor
         if type(content_image) is str:
             content_image_tensor = io.read_image(content_image)
         else:
             content_image_tensor = content_image
 
+        # load style image tensor
         if type(style_image) is str:
             style_image_tensor = io.read_image(style_image)
         else:
             style_image_tensor = style_image
 
+        # preprocess style and content images
         preprocess = T.Compose(
             [
                 T.ConvertImageDtype(torch.float),
@@ -60,18 +62,21 @@ class Baseline(pl.LightningModule):
                 T.Lambda(lambda x: x.unsqueeze(0)),
             ]
         )
-
         content_image_tensor = preprocess(content_image_tensor)
         style_image_tensor = preprocess(style_image_tensor)
+
+        # initialize image to optimize
         self._optimized_image = content_image_tensor
 
+        # initialize content and style layers
         if content_layers is None:
             content_layers = ["conv4_2"]
-
         if style_layers is None:
             style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
         self._feature_extractor = FeatureExtractor(content_layers, style_layers)
 
+        # extract feature maps from style and content image
+        # TODO check if batch dimmension reduction is valid
         # content feature maps of content_image without batch dimension
         target_content_features_maps = self._feature_extractor(content_image_tensor)[0]
         for x in range(len(target_content_features_maps)):
@@ -82,9 +87,10 @@ class Baseline(pl.LightningModule):
         for x in range(len(target_style_features_maps)):
             target_style_features_maps[x] = target_style_features_maps[x].squeeze(0)
 
+        # initialize loss functions and loss weights
         self._content_loss = ContentLoss(target_content_features_maps)
         self._style_loss = StyleLoss(target_style_features_maps)
-        self._total_variation_loss = TotalVariationLoss
+        self._total_variation_loss = TotalVariationLoss()
 
         self._content_weight = content_weight
         self._style_weight = style_weight
