@@ -19,6 +19,7 @@ class Baseline(pl.LightningModule):
         content_image: Union[torch.Tensor, str],
         style_image: Union[torch.Tensor, str],
         image_size: Tuple[int, int] = (225, 225),
+        init_with_content: bool = True,
         learning_rate: float = 1e-1,
         content_weight: float = 0.4,
         style_weight: float = 0.4,
@@ -32,6 +33,7 @@ class Baseline(pl.LightningModule):
         :param content_image: tensor with shape [3, image_height, image_width] and uint8 values or path to jpg file
         :param content_image: tensor with shape [3, image_height, image_width] and uint8 values or path to jpg file
         :param image_size: tuple representing output image size (at least 224x224)
+        :param use_content_image: if true content image will be used to initialize training else noise
         :param learning_rate: learning rate passed to optimizer
         :param content_weight: content loss weight
         :param style_weight: style loss weight
@@ -66,7 +68,11 @@ class Baseline(pl.LightningModule):
         style_image_tensor = preprocess(style_image_tensor)
 
         # initialize image to optimize
-        self._optimized_image = content_image_tensor
+        if init_with_content:
+            self._optimized_image = torch.nn.Parameter(content_image_tensor, requires_grad=True)
+        else:
+            random_image_tensor = torch.randn((1, 3, image_size[0], image_size[1]))
+            self._optimized_image = torch.nn.Parameter(random_image_tensor, requires_grad=True)
 
         # initialize content and style layers
         if content_layers is None:
