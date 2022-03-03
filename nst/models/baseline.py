@@ -1,11 +1,11 @@
-from asyncore import write
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import pytorch_lightning as pl
 import torch
 import torchvision.transforms as T
 from torchvision.transforms.functional import convert_image_dtype
 from torchvision.io import write_jpeg
+import torchvision.io as io
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -16,8 +16,8 @@ from nst.modules import FeatureExtractor
 class Baseline(pl.LightningModule):
     def __init__(
         self,
-        content_image: torch.Tensor,
-        style_image: torch.Tensor,
+        content_image: Union[torch.Tensor, str],
+        style_image: Union[torch.Tensor, str],
         image_size: Tuple[int, int] = (225, 225),
         learning_rate: float = 1e-1,
         content_weight: float = 0.4,
@@ -29,8 +29,8 @@ class Baseline(pl.LightningModule):
         """
         Classic iterative style transfer algorithm.
 
-        :param content_image: tensor with shape [3, image_height, image_width] and uint8 values
-        :param content_image: tensor with shape [3, image_height, image_width] and uint8 values
+        :param content_image: tensor with shape [3, image_height, image_width] and uint8 values or path to jpg file
+        :param content_image: tensor with shape [3, image_height, image_width] and uint8 values or path to jpg file
         :param image_size: tuple representing output image size (at least 224x224)
         :param learning_rate: learning rate passed to optimizer
         :param content_weight: content loss weight
@@ -41,11 +41,16 @@ class Baseline(pl.LightningModule):
         """
         super().__init__()
 
-        if content_layers is None:
-            content_layers = ["conv4_2"]
+        # Load image tensors
+        if type(content_image) is str:
+            content_image_tensor = io.read_image(content_image)
+        else:
+            content_image_tensor = content_image
 
-        if style_layers is None:
-            style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
+        if type(style_image) is str:
+            style_image_tensor = io.read_image(style_image)
+        else:
+            style_image_tensor = style_image
 
         preprocess = T.Compose(
             [
@@ -56,20 +61,30 @@ class Baseline(pl.LightningModule):
             ]
         )
 
-        content_image = preprocess(content_image)
-        style_image = preprocess(style_image)
+        content_image_tensor = preprocess(content_image_tensor)
+        style_image_tensor = preprocess(style_image_tensor)
+        self._optimized_image = content_image_tensor
 
+        if content_layers is None:
+            content_layers = ["conv4_2"]
+
+        if style_layers is None:
+            style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
         self._feature_extractor = FeatureExtractor(content_layers, style_layers)
 
-        target_content_feature_maps = self._feature_extractor(content_image)[0]
-        self._content_loss = ContentLoss(target_content_feature_maps)
+        # content feature maps of content_image without batch dimension
+        target_content_features_maps = self._feature_extractor(content_image_tensor)[0]
+        for x in range(len(target_content_features_maps)):
+            target_content_features_maps[x] = target_content_features_maps[x].squeeze(0)
 
-        target_style_feature_maps = self._feature_extractor(style_image)[1]
-        self._style_loss = StyleLoss(target_style_feature_maps)
+        # style feature maps of style_image without batch dimension
+        target_style_features_maps = self._feature_extractor(style_image_tensor)[1]
+        for x in range(len(target_style_features_maps)):
+            target_style_features_maps[x] = target_style_features_maps[x].squeeze(0)
 
-        self._total_variation_loss = TotalVariationLoss()
-
-        self._optimized_image = content_image
+        self._content_loss = ContentLoss(target_content_features_maps)
+        self._style_loss = StyleLoss(target_style_features_maps)
+        self._total_variation_loss = TotalVariationLoss
 
         self._content_weight = content_weight
         self._style_weight = style_weight
