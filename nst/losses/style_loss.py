@@ -1,47 +1,44 @@
 import torch
 from typing import List
-from nst.models import Baseline
+from torch.nn.functional import mse_loss
 
 
 # style_target_features, image_features are lists of tensor containing respective feature maps
 class StyleLoss:
     def __init__(self, style_target_features: List[torch.Tensor]):  # Gram matrix operation on target style image
-        self.style_target_features = StyleLoss._gram_matrix(style_target_features)
         """
         Loss between style target feature maps and input image feature maps.
         Computed using gram matrix of the feature maps.
 
         :param style_target_features: list of style target feature maps
         """
+        self.style_gram_matrix_list = []
+        for feature_map in style_target_features:
+            self.style_gram_matrix_list.append(StyleLoss._gram_matrix(feature_map))
 
     def __call__(self, image_features: List[torch.Tensor]) -> torch.Tensor:  # Style loss for specific iteration
-        current_style_loss = torch.nn.MSELoss(reduction="mean")(
-            StyleLoss._gram_matrix(image_features), self.style_target_features
-        )
-        return current_style_loss
         """
         Compute and sum style loss for each feature map of the input image.
 
         :param image_features: list of feature maps of the input image
-         (feature map shape [batch, channels, height, width])
+            (feature map shape [batch, channels, height, width])
         :returns: vector of len = batch representing style loss
         """
+        sum_of_losses = torch.zeros(image_features[0].shape[0])
+        for index, feature_map in enumerate(image_features):
+            feature_map_gram_matrix = StyleLoss._gram_matrix(feature_map)
+            sum_of_losses += mse_loss(self.style_gram_matrix_list[index], feature_map_gram_matrix)
+        return sum_of_losses
 
     @staticmethod  # Gram matrix operation on the input
-    def _gram_matrix(x: List[torch.Tensor]) -> torch.Tensor:
-        Gram = []
-        Computed_gram = torch.empty()
-        for layer in x:
-            b, ch, height, width = layer.size()
-            A = layer.view(b, ch, height * width)
-            B = torch.bmm(A, A.transpose(1, 2))  # transpose in the first and second dimension
-            B.div_(height * width)
-            Gram.append(B)
-        torch.stack(Gram, out=torch.tensor(Computed_gram))
-        return Computed_gram
+    def _gram_matrix(x: torch.Tensor) -> torch.Tensor:
         """
         Compute gram matrix of given input matrix.
 
         :param x: input matrix with shape [batch, channels, height, width]
         :returns: tensor representing gram matrix for each example in batch
         """
+        batch, channel, height, width = x.size()
+        x_view = x.view(batch, channel, height * width)
+        x_gram = torch.bmm(x_view, x_view.transpose(1, 2))  # transpose in the first and second dimension
+        return x_gram.div(height * width)
