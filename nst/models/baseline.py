@@ -84,7 +84,11 @@ class Baseline(pl.LightningModule):
         style_loss = self._style_loss(style_feature_maps)
 
         total_variation_loss = self._total_variation_loss(self._optimized_image)
-        sum_of_losses = self._content_weight * content_loss + self._style_weight * style_loss
+        sum_of_losses = (
+            self._content_weight * content_loss
+            + self._style_weight * style_loss
+            + self._style_weight * total_variation_loss
+        )
 
         writer = SummaryWriter()
         writer.add_image("Working Image", self._optimized_image.squeeze(), global_step=self.global_step)
