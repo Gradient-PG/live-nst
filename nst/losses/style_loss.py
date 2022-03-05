@@ -3,9 +3,8 @@ from typing import List
 from torch.nn.functional import mse_loss
 
 
-# style_target_features, image_features are lists of tensor containing respective feature maps
 class StyleLoss:
-    def __init__(self, style_target_features: List[torch.Tensor]):  # Gram matrix operation on target style image
+    def __init__(self, style_target_features: List[torch.Tensor]):
         """
         Loss between style target feature maps and input image feature maps.
         Computed using gram matrix of the feature maps.
@@ -16,7 +15,7 @@ class StyleLoss:
         for feature_map in style_target_features:
             self.style_gram_matrix_list.append(StyleLoss._gram_matrix(feature_map))
 
-    def __call__(self, image_features: List[torch.Tensor]) -> torch.Tensor:  # Style loss for specific iteration
+    def __call__(self, image_features: List[torch.Tensor]) -> torch.Tensor:
         """
         Compute and sum style loss for each feature map of the input image.
 
@@ -30,7 +29,7 @@ class StyleLoss:
             sum_of_losses += mse_loss(self.style_gram_matrix_list[index], feature_map_gram_matrix)
         return sum_of_losses
 
-    @staticmethod  # Gram matrix operation on the input
+    @staticmethod
     def _gram_matrix(x: torch.Tensor) -> torch.Tensor:
         """
         Compute gram matrix of given input matrix.
