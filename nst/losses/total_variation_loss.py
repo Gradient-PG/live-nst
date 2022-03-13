@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from typing import List
 
 
@@ -10,11 +11,7 @@ class TotalVariationLoss:
         :param image: tensor representing input image with shape [batch, channels, height, width]
         :returns: vector of len = batch representing total variation loss
         """
-        batch, _, _, _ = image.size()
-
-        tv_loss = torch.sum(
-            torch.abs(image[:, :, :, :-1].view(batch, -1).sum(1) - image[:, :, :, 1:].view(batch, -1).sum(1))
-        ) + torch.sum(
-            torch.abs(image[:, :, :-1, :].view(batch, -1).sum(1) - image[:, :, 1:, :].view(batch, -1).sum(1))
+        tv_loss = F.l1_loss(image[:, :, :, :-1], image[:, :, :, 1:]) + F.l1_loss(
+            image[:, :, :-1, :], image[:, :, 1:, :]
         )
         return tv_loss
