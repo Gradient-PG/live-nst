@@ -60,7 +60,6 @@ class Baseline(pl.LightningModule):
             [
                 T.ConvertImageDtype(torch.float),
                 T.Resize(image_size),
-                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 T.Lambda(lambda x: x.unsqueeze(0)),
             ]
         )
@@ -74,24 +73,11 @@ class Baseline(pl.LightningModule):
             random_image_tensor = torch.randn((1, 3, image_size[0], image_size[1]))
             self._optimized_image = torch.nn.Parameter(random_image_tensor, requires_grad=True)
 
-        # initialize content and style layers
-        if content_layers is None:
-            content_layers = ["conv4_2"]
-        if style_layers is None:
-            style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
         self._feature_extractor = FeatureExtractor(content_layers, style_layers)
 
         # extract feature maps from style and content image
-        # TODO check if batch dimmension reduction is valid
-        # content feature maps of content_image without batch dimension
-        target_content_features_maps = self._feature_extractor(content_image_tensor)[0]
-        for x in range(len(target_content_features_maps)):
-            target_content_features_maps[x] = target_content_features_maps[x].squeeze(0)
-
-        # style feature maps of style_image without batch dimension
-        target_style_features_maps = self._feature_extractor(style_image_tensor)[1]
-        for x in range(len(target_style_features_maps)):
-            target_style_features_maps[x] = target_style_features_maps[x].squeeze(0)
+        target_content_features_maps, _ = self._feature_extractor(content_image_tensor)
+        _, target_style_features_maps = self._feature_extractor(style_image_tensor)
 
         # initialize loss functions and loss weights
         self._content_loss = ContentLoss(target_content_features_maps)
@@ -127,7 +113,7 @@ class Baseline(pl.LightningModule):
         return sum_of_losses
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self._optimized_image.parameters(), lr=self._learning_rate)
+        return torch.optim.Adam([self._optimized_image], lr=self._learning_rate)
 
     def train_dataloader(self):
         """Configure dummy dataset with one empty tensor."""
