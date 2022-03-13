@@ -20,10 +20,10 @@ class Baseline(pl.LightningModule):
         style_image: Union[torch.Tensor, str],
         image_size: Tuple[int, int] = (225, 225),
         init_with_content: bool = True,
-        learning_rate: float = 1e-1,
-        content_weight: float = 0.4,
-        style_weight: float = 0.4,
-        total_variation_weight: float = 0.2,
+        learning_rate: float = 1e1,
+        content_weight: float = 1e5,
+        style_weight: float = 1e5,
+        total_variation_weight: float = 1e-1,
         content_layers: List[str] = None,
         style_layers: List[str] = None,
     ):
@@ -100,7 +100,7 @@ class Baseline(pl.LightningModule):
         sum_of_losses = (
             self._content_weight * content_loss
             + self._style_weight * style_loss
-            + self._style_weight * total_variation_loss
+            + self._total_variation_weight * total_variation_loss
         )
 
         writer = SummaryWriter()
@@ -109,8 +109,11 @@ class Baseline(pl.LightningModule):
         writer.add_scalar("Loss/style/", style_loss, global_step=self.global_step)
         writer.add_scalar("Loss/total_variation/", total_variation_loss, global_step=self.global_step)
         writer.close()
-
         return sum_of_losses
+
+    def training_epoch_end(self, outputs):
+        with torch.no_grad():
+            self._optimized_image[:] = self._optimized_image.clamp(0, 1)
 
     def configure_optimizers(self):
         return torch.optim.Adam([self._optimized_image], lr=self._learning_rate)
