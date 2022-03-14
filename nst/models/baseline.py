@@ -7,7 +7,6 @@ from torchvision.transforms.functional import convert_image_dtype
 from torchvision.io import write_jpeg
 import torchvision.io as io
 from torch.utils.data import TensorDataset, DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
 from nst.losses import ContentLoss, StyleLoss, TotalVariationLoss
 from nst.modules import FeatureExtractor
@@ -95,25 +94,24 @@ class Baseline(pl.LightningModule):
 
         content_loss = self._content_loss(content_feature_maps)
         style_loss = self._style_loss(style_feature_maps)
+        tv_loss = self._total_variation_loss(self._optimized_image)
 
-        total_variation_loss = self._total_variation_loss(self._optimized_image)
-        sum_of_losses = (
-            self._content_weight * content_loss
-            + self._style_weight * style_loss
-            + self._total_variation_weight * total_variation_loss
-        )
+        weighted_content_loss = self._content_weight * content_loss
+        weighted_style_loss = self._style_weight * style_loss
+        weighted_tv_loss = self._total_variation_weight * tv_loss
+        loss = weighted_content_loss + weighted_style_loss + weighted_tv_loss
 
-        writer = SummaryWriter()
-        writer.add_image("Working Image", self._optimized_image.squeeze(), global_step=self.global_step)
-        writer.add_scalar("Loss/content/", content_loss, global_step=self.global_step)
-        writer.add_scalar("Loss/style/", style_loss, global_step=self.global_step)
-        writer.add_scalar("Loss/total_variation/", total_variation_loss, global_step=self.global_step)
-        writer.close()
-        return sum_of_losses
+        self.log("loss/content", weighted_content_loss)
+        self.log("loss/style", weighted_style_loss)
+        self.log("loss/tv", weighted_tv_loss)
+        self.log("loss", loss)
+
+        return loss
 
     def training_epoch_end(self, outputs):
         with torch.no_grad():
             self._optimized_image[:] = self._optimized_image.clamp(0, 1)
+        self.logger.experiment.add_image("result_image", self.optimized_image, global_step=self.global_step)
 
     def configure_optimizers(self):
         return torch.optim.Adam([self._optimized_image], lr=self._learning_rate)
