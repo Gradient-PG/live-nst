@@ -1,6 +1,6 @@
 import torch
 from typing import List, Optional
-from torch.nn.functional import mse_loss
+from nst.losses.mse_batch_loss import MSEBatchLoss
 
 
 class ContentLoss:
@@ -14,6 +14,7 @@ class ContentLoss:
         :param content_target_features: list of conten target feature maps
         """
         self._content_target_features = content_target_features
+        self._loss = MSEBatchLoss()
 
     def __call__(self, image_features: List[torch.Tensor]) -> Optional[torch.Tensor]:
         """
@@ -27,8 +28,8 @@ class ContentLoss:
 
         for input_features, target_features in zip(image_features, self._content_target_features):
             if loss is None:
-                loss = mse_loss(input_features, target_features)
+                loss = self._loss(input_features, target_features)
             else:
-                loss += mse_loss(input_features, target_features)
+                loss += self._loss(input_features, target_features)
 
         return loss

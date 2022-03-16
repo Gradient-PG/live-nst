@@ -1,6 +1,6 @@
 import torch
 from typing import List, Optional
-from torch.nn.functional import mse_loss
+from nst.losses.mse_batch_loss import MSEBatchLoss
 
 
 class StyleLoss:
@@ -14,6 +14,8 @@ class StyleLoss:
         self._style_target_gram_matrices = []
         for feature_map in style_target_features:
             self._style_target_gram_matrices.append(self._gram_matrix(feature_map))
+
+        self._loss = MSEBatchLoss()
 
     def __call__(self, image_features: List[torch.Tensor]) -> Optional[torch.Tensor]:
         """
@@ -29,9 +31,9 @@ class StyleLoss:
             input_gram_matrix = self._gram_matrix(input_features)
 
             if loss is None:
-                loss = mse_loss(input_gram_matrix, target_gram_matrix)
+                loss = self._loss(input_gram_matrix, target_gram_matrix)
             else:
-                loss += mse_loss(input_gram_matrix, target_gram_matrix)
+                loss += self._loss(input_gram_matrix, target_gram_matrix)
 
         if loss is not None:
             loss /= len(image_features)

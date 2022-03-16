@@ -4,7 +4,7 @@ import torch
 from nst.losses import TotalVariationLoss
 
 
-class TestFeatureExtractor:
+class TestTotalVariationLoss:
     @pytest.fixture
     def ones_image_batch(self):
         return torch.ones((1, 3, 250, 250))
