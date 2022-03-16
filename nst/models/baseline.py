@@ -17,11 +17,11 @@ class Baseline(pl.LightningModule):
         self,
         content_image: Union[torch.Tensor, str],
         style_image: Union[torch.Tensor, str],
-        image_size: Tuple[int, int] = (250, 250),
+        image_size: Tuple[int, int] = (256, 256),
         init_with_content: bool = True,
         learning_rate: float = 1e-1,
         content_weight: float = 1e1,
-        style_weight: float = 1e6,
+        style_weight: float = 1e7,
         total_variation_weight: float = 1e-1,
         content_layers: List[str] = None,
         style_layers: List[str] = None,
@@ -78,9 +78,24 @@ class Baseline(pl.LightningModule):
         target_content_features_maps, _ = self._feature_extractor(self._content_image_tensor)
         _, target_style_features_maps = self._feature_extractor(self._style_image_tensor)
 
+        # register target content feature maps
+        self._target_content_features_maps_names = []
+        for idx, features_map in enumerate(target_content_features_maps):
+            name = f"_target_content_feature_map_{idx}"
+            self.register_buffer(name, features_map)
+            self._target_content_features_maps_names.append(name)
+
+        # compute and register target style gram matrices
+        self._target_style_gram_matrices_names = []
+        for idx, features_map in enumerate(target_style_features_maps):
+            name = f"target_style_gram_matrix_{idx}"
+            gram_matrix = StyleLoss.gram_matrix(features_map)
+            self.register_buffer(name, gram_matrix)
+            self._target_style_gram_matrices_names.append(name)
+
         # initialize loss functions and loss weights
-        self._content_loss = ContentLoss(target_content_features_maps)
-        self._style_loss = StyleLoss(target_style_features_maps)
+        self._content_loss = ContentLoss()
+        self._style_loss = StyleLoss()
         self._total_variation_loss = TotalVariationLoss()
 
         self._content_weight = content_weight
@@ -90,14 +105,25 @@ class Baseline(pl.LightningModule):
         self._learning_rate = learning_rate
 
     def on_fit_start(self):
+        # list target content feature maps attributes
+        self._target_content_features_maps = []
+        for name in self._target_content_features_maps_names:
+            self._target_content_features_maps.append(getattr(self, name))
+
+        # list target style feature maps attributes
+        self._target_style_gram_matrices = []
+        for name in self._target_style_gram_matrices_names:
+            self._target_style_gram_matrices.append(getattr(self, name))
+
+        # log content and style targets
         self.logger.experiment.add_image("content_target", self._content_image_tensor.squeeze(0))
         self.logger.experiment.add_image("style_target", self._style_image_tensor.squeeze(0))
 
     def training_step(self, batch, batch_idx):
         content_feature_maps, style_feature_maps = self._feature_extractor(self._optimized_image)
 
-        content_loss = self._content_loss(content_feature_maps)
-        style_loss = self._style_loss(style_feature_maps)
+        content_loss = self._content_loss(content_feature_maps, self._target_content_features_maps)
+        style_loss = self._style_loss(style_feature_maps, self._target_style_gram_matrices)
         tv_loss = self._total_variation_loss(self._optimized_image)
 
         weighted_content_loss = self._content_weight * content_loss
