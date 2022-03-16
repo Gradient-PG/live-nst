@@ -1,5 +1,5 @@
 import torch
-from typing import List
+from typing import List, Optional
 from torch.nn.functional import mse_loss
 
 
@@ -11,23 +11,31 @@ class StyleLoss:
 
         :param style_target_features: list of style target feature maps
         """
-        self.style_gram_matrix_list = []
+        self._style_target_gram_matrices = []
         for feature_map in style_target_features:
-            self.style_gram_matrix_list.append(StyleLoss._gram_matrix(feature_map))
+            self._style_target_gram_matrices.append(self._gram_matrix(feature_map))
 
-    def __call__(self, image_features: List[torch.Tensor]) -> torch.Tensor:
+    def __call__(self, image_features: List[torch.Tensor]) -> Optional[torch.Tensor]:
         """
         Compute and sum style loss for each feature map of the input image.
 
         :param image_features: list of feature maps of the input image
             (feature map shape [batch, channels, height, width])
-        :returns: vector of len = batch representing style loss
+        :returns: vector of len = batch representing style loss or None if image_features is empty
         """
-        sum_of_losses = torch.zeros(image_features[0].shape[0])
-        for index, feature_map in enumerate(image_features):
-            feature_map_gram_matrix = StyleLoss._gram_matrix(feature_map)
-            sum_of_losses += mse_loss(self.style_gram_matrix_list[index], feature_map_gram_matrix)
-        return sum_of_losses
+        loss = None
+
+        for input_features, target_gram_matrix in zip(image_features, self._style_target_gram_matrices):
+            input_gram_matrix = self._gram_matrix(input_features)
+
+            if loss is None:
+                loss = mse_loss(input_gram_matrix, target_gram_matrix)
+            else:
+                loss += mse_loss(input_gram_matrix, target_gram_matrix)
+
+        if loss is not None:
+            loss /= len(image_features)
+        return loss
 
     @staticmethod
     def _gram_matrix(x: torch.Tensor) -> torch.Tensor:
@@ -40,4 +48,4 @@ class StyleLoss:
         batch, channel, height, width = x.size()
         x_view = x.view(batch, channel, height * width)
         x_gram = torch.bmm(x_view, x_view.transpose(1, 2))  # transpose in the first and second dimension
-        return x_gram.div(height * width)
+        return x_gram.div(channel * height * width)
