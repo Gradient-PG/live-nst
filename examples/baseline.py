@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     model = Baseline(content_image, style_image)
 
-    trainer = pl.Trainer(max_epochs=10)
+    trainer = pl.Trainer(max_epochs=50, log_every_n_steps=1)
     trainer.fit(model)
 
     model.save_optimized_image("examples/images/result_image.jpg")
