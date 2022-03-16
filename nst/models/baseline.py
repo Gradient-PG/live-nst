@@ -17,11 +17,11 @@ class Baseline(pl.LightningModule):
         self,
         content_image: Union[torch.Tensor, str],
         style_image: Union[torch.Tensor, str],
-        image_size: Tuple[int, int] = (225, 225),
+        image_size: Tuple[int, int] = (250, 250),
         init_with_content: bool = True,
-        learning_rate: float = 1e1,
-        content_weight: float = 1e5,
-        style_weight: float = 1e5,
+        learning_rate: float = 1e-1,
+        content_weight: float = 1e1,
+        style_weight: float = 1e6,
         total_variation_weight: float = 1e-1,
         content_layers: List[str] = None,
         style_layers: List[str] = None,
@@ -62,12 +62,12 @@ class Baseline(pl.LightningModule):
                 T.Lambda(lambda x: x.unsqueeze(0)),
             ]
         )
-        content_image_tensor = preprocess(content_image_tensor)
-        style_image_tensor = preprocess(style_image_tensor)
+        self._content_image_tensor = preprocess(content_image_tensor)
+        self._style_image_tensor = preprocess(style_image_tensor)
 
         # initialize image to optimize
         if init_with_content:
-            self._optimized_image = torch.nn.Parameter(content_image_tensor, requires_grad=True)
+            self._optimized_image = torch.nn.Parameter(self._content_image_tensor, requires_grad=True)
         else:
             random_image_tensor = torch.randn((1, 3, image_size[0], image_size[1]))
             self._optimized_image = torch.nn.Parameter(random_image_tensor, requires_grad=True)
@@ -75,8 +75,8 @@ class Baseline(pl.LightningModule):
         self._feature_extractor = FeatureExtractor(content_layers, style_layers)
 
         # extract feature maps from style and content image
-        target_content_features_maps, _ = self._feature_extractor(content_image_tensor)
-        _, target_style_features_maps = self._feature_extractor(style_image_tensor)
+        target_content_features_maps, _ = self._feature_extractor(self._content_image_tensor)
+        _, target_style_features_maps = self._feature_extractor(self._style_image_tensor)
 
         # initialize loss functions and loss weights
         self._content_loss = ContentLoss(target_content_features_maps)
@@ -88,6 +88,10 @@ class Baseline(pl.LightningModule):
         self._total_variation_weight = total_variation_weight
 
         self._learning_rate = learning_rate
+
+    def on_fit_start(self):
+        self.logger.experiment.add_image("content_target", self._content_image_tensor.squeeze(0))
+        self.logger.experiment.add_image("style_target", self._style_image_tensor.squeeze(0))
 
     def training_step(self, batch, batch_idx):
         content_feature_maps, style_feature_maps = self._feature_extractor(self._optimized_image)
@@ -111,10 +115,10 @@ class Baseline(pl.LightningModule):
     def training_epoch_end(self, outputs):
         with torch.no_grad():
             self._optimized_image[:] = self._optimized_image.clamp(0, 1)
-        self.logger.experiment.add_image("result_image", self.optimized_image, global_step=self.global_step)
+        self.logger.experiment.add_image("result", self.optimized_image, global_step=self.global_step)
 
     def configure_optimizers(self):
-        return torch.optim.Adam([self._optimized_image], lr=self._learning_rate)
+        return torch.optim.Adam((self._optimized_image,), lr=self._learning_rate)
 
     def train_dataloader(self):
         """Configure dummy dataset with one empty tensor."""
