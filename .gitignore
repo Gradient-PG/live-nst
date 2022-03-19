@@ -133,3 +133,6 @@ lightning_logs/
 
 # IDE files
 .vscode/
+
+# Hydra runs directory
+runs/

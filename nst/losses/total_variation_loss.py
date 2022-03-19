@@ -1,8 +1,15 @@
 import torch
-from typing import List
+from nst.losses.l1_batch_loss import L1BatchLoss
 
 
 class TotalVariationLoss:
+    def __init__(self):
+        """
+        Class computes total variation loss for the input image.
+        It measures how smooth input image is.
+        """
+        self._loss = L1BatchLoss()
+
     def __call__(self, image: torch.Tensor) -> torch.Tensor:
         """
         Compute total variation loss of the input image.
@@ -10,11 +17,7 @@ class TotalVariationLoss:
         :param image: tensor representing input image with shape [batch, channels, height, width]
         :returns: vector of len = batch representing total variation loss
         """
-        batch, _, _, _ = image.size()
-
-        tv_loss = torch.sum(
-            torch.abs(image[:, :, :, :-1].view(batch, -1).sum(1) - image[:, :, :, 1:].view(batch, -1).sum(1))
-        ) + torch.sum(
-            torch.abs(image[:, :, :-1, :].view(batch, -1).sum(1) - image[:, :, 1:, :].view(batch, -1).sum(1))
+        tv_loss = self._loss(image[:, :, :, :-1], image[:, :, :, 1:]) + self._loss(
+            image[:, :, :-1, :], image[:, :, 1:, :]
         )
         return tv_loss

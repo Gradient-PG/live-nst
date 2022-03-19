@@ -1,59 +1,59 @@
 import torch
 import torch.nn as nn
+import torchvision.transforms as T
 from typing import List, Tuple
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, content_layers: List[str], style_layers: List[str]):
+    def __init__(self, content_layers: List[str] = None, style_layers: List[str] = None, use_relu: bool = True):
         """
         Module responsible for extracting feature maps from vgg19 network.
 
         :param content_layers: list of string names of vgg19 layers to use to compute content feature maps
         :param style_layers: list of string names of vgg19 layers to use to compute style feature maps
+        :param use_relu: if true extractor will return features after relu activation
         """
         super().__init__()
 
-        trained_vgg19 = torch.hub.load("pytorch/vision:v0.10.0", "vgg19", pretrained=True).features.eval()
+        # if layers not define use default from original publication
+        if content_layers is None:
+            content_layers = ["conv4_2"]
+        if style_layers is None:
+            style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
+
         # written out manually from the vgg19 architecture
-        vgg19_indexes = {
-            "conv1_1": 0,
-            "conv1_2": 2,
-            "conv2_1": 5,
-            "conv2_2": 7,
-            "conv3_1": 10,
-            "conv3_2": 12,
-            "conv3_3": 14,
-            "conv3_4": 16,
-            "conv4_1": 19,
-            "conv4_2": 21,
-            "conv4_3": 23,
-            "conv4_4": 25,
-            "conv5_1": 28,
-            "conv5_2": 30,
-            "conv5_3": 32,
-            "conv5_4": 34,
+        # fmt: off
+        vgg19_layer_indices = {
+            'conv1_1': 0, 'conv1_2': 2,
+            'conv2_1': 5, 'conv2_2': 7,
+            'conv3_1': 10, 'conv3_2': 12, 'conv3_3': 14, 'conv3_4': 16,
+            'conv4_1': 19, 'conv4_2': 21, 'conv4_3': 23, 'conv4_4': 25,
+            'conv5_1': 28, 'conv5_2': 30, 'conv5_3': 32, 'conv5_4': 34,
         }
-        coded_content_layers = [(x, "content") for x in content_layers]
-        coded_style_layers = [(x, "style") for x in style_layers]
-        all_layers = sorted(coded_style_layers + coded_content_layers)
+        # fmt: on
 
-        self.__features = []
-        last_index = 0
+        if use_relu:
+            # add one to each index since relu follows conv layers
+            self._content_layers_indices = [vgg19_layer_indices[layer] + 1 for layer in content_layers]
+            self._style_layers_indices = [vgg19_layer_indices[layer] + 1 for layer in style_layers]
+        else:
+            self._content_layers_indices = [vgg19_layer_indices[layer] for layer in content_layers]
+            self._style_layers_indices = [vgg19_layer_indices[layer] for layer in style_layers]
 
-        for i in range(len(all_layers)):
-            # add each needed layer and its type
-            self.__features.append((torch.nn.Sequential(), all_layers[i][1]))
-            # get index
-            layer_index = vgg19_indexes[all_layers[i][0]]
+        self._vgg = torch.hub.load("pytorch/vision:v0.10.0", "vgg19", pretrained=True).features.eval()
 
-            for j in range(last_index, layer_index + 1):
-                # adding all layers between last layer up to current one
-                self.__features[i][0].training = False
-                self.__features[i][0].add_module(str(j), trained_vgg19[j])
-            last_index = layer_index + 1
+        # change max pooling layers to average pooling layers
+        for idx, layer in enumerate(self._vgg.children()):
+            if isinstance(layer, nn.MaxPool2d):
+                self._vgg[idx] = nn.AvgPool2d(kernel_size=2, stride=2)
+            if isinstance(layer, nn.ReLU):
+                self._vgg[idx] = nn.ReLU(inplace=False)
 
-        for param in self.parameters():
+        for param in self._vgg.parameters():
             param.requires_grad = False
+
+        # input image needs to be normalized using vgg's dataset mean and std
+        self._preprocessor = T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     def forward(self, x: torch.Tensor) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         """
@@ -63,12 +63,16 @@ class FeatureExtractor(nn.Module):
         :returns: first element of tuple is list of content feature maps and second is list of style feature maps
          (feature map shape [batch, channels, height, width])
         """
-        styles = []
-        contents = []
-        for feature in self.__features:
-            x = feature[0](x)
-            if feature[1] == "style":
-                styles.append(x)
-            else:
-                contents.append(x)
-        return contents, styles
+        x = self._preprocessor(x)
+
+        content_features = []
+        style_features = []
+
+        for idx, layer in enumerate(self._vgg.children()):
+            x = layer(x)
+            if idx in self._content_layers_indices:
+                content_features.append(x)
+            if idx in self._style_layers_indices:
+                style_features.append(x)
+
+        return content_features, style_features

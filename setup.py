@@ -9,6 +9,10 @@ setup(
     author="Gradient PG",
     author_email="gradientpg@gmail.com",
     url="https://github.com/Gradient-PG/live-nst",
-    install_requires=["pytorch-lightning"],
+    install_requires=[
+        "pytorch-lightning~=1.5.9",
+        "torchvision>=0.8.2",
+        "hydra-core>=1.1.1",
+    ],
     packages=find_packages(),
 )
