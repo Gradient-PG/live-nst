@@ -10,5 +10,5 @@ if __name__ == "__main__":
 
     model = Baseline(content_image, style_image)
 
-    trainer = pl.Trainer(max_epochs=50, log_every_n_steps=1)
+    trainer = pl.Trainer(max_epochs=50, log_every_n_steps=10)
     trainer.fit(model)

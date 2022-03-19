@@ -104,6 +104,9 @@ class Baseline(pl.LightningModule):
 
         self._learning_rate = learning_rate
 
+        # persist hyperparameters
+        self.save_hyperparameters()
+
     def on_fit_start(self):
         # list target content feature maps attributes
         self._target_content_features_maps = []
