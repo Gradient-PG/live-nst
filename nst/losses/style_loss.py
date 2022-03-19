@@ -1,15 +1,21 @@
 import torch
 from typing import List, Optional
 from nst.losses.mse_batch_loss import MSEBatchLoss
+import torch.nn as nn
 
 
 class StyleLoss:
-    def __init__(self):
+    def __init__(self, reduce_batch=False):
         """
         Loss between style target feature maps and input image feature maps.
         Computed using gram matrix of the feature maps.
+
+        :param reduce_batch: if false loss is computed for each image in batch
         """
-        self._loss = MSEBatchLoss()
+        if reduce_batch:
+            self._loss = nn.MSELoss()
+        else:
+            self._loss = MSEBatchLoss()
 
     def __call__(
         self,
@@ -25,7 +31,8 @@ class StyleLoss:
         :param target_features: list of feature maps of the target image
             (feature map shape [batch, channels, height, width])
         :param compute_target_gram: if false assume that list of target features contains gram matrices
-        :returns: vector of len = batch representing style loss or None if image_features is empty
+        :returns: vector of len = batch representing style loss, scalar if reduce_batch is true
+            or None if image_features is empty
         """
         loss = None
 
