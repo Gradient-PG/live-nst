@@ -136,3 +136,6 @@ lightning_logs/
 
 # Hydra runs directory
 runs/
+
+# Datasets
+data/

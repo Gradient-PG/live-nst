@@ -69,8 +69,8 @@ class FeedForward(pl.LightningModule):
             self._target_style_gram_matrices_names.append(name)
 
         # initialize loss functions and loss weights
-        self._content_loss = ContentLoss()
-        self._style_loss = StyleLoss()
+        self._content_loss = ContentLoss(reduce_batch=True)
+        self._style_loss = StyleLoss(reduce_batch=True)
         self._total_variation_loss = TotalVariationLoss(reduce_batch=True)
 
         self._content_weight = content_weight
@@ -92,13 +92,17 @@ class FeedForward(pl.LightningModule):
         self.logger.experiment.add_image("style_target", self._style_image_tensor.squeeze(0))
 
     def training_step(self, batch, batch_idx):
-
+        batch = batch[0]
         content_feature_maps, _ = self._feature_extractor(batch)
         optimized_image_batch = self._model(batch)
+
+        with torch.no_grad():
+            optimized_image_batch[:] = optimized_image_batch.clamp(0, 1)
+
         optimized_content_feature_maps, optimized_style_feature_maps = self._feature_extractor(optimized_image_batch)
 
-        content_loss = self._content_loss(content_feature_maps, optimized_content_feature_maps)
-        style_loss = self._style_loss(self._target_style_gram_matrices, optimized_style_feature_maps)
+        content_loss = self._content_loss(optimized_content_feature_maps, content_feature_maps)
+        style_loss = self._style_loss(optimized_style_feature_maps, self._target_style_gram_matrices)
         tv_loss = self._total_variation_loss(optimized_image_batch)
 
         weighted_content_loss = self._content_weight * content_loss
@@ -110,6 +114,9 @@ class FeedForward(pl.LightningModule):
         self.log("loss/style", weighted_style_loss)
         self.log("loss/tv", weighted_tv_loss)
         self.log("loss", loss)
+
+        # TODO move to val loop
+        self.logger.experiment.add_image("result_image", optimized_image_batch[0].squeeze(0), step=self.global_step)
 
         return loss
 
