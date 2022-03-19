@@ -31,7 +31,7 @@ class COCO128DataModule(pl.LightningDataModule):
         )
 
     def setup(self, stage=None):
-        data_path = os.path.join([self.data_dir, "coco128", "images"])
+        data_path = os.path.join(self.data_dir, "coco128", "images")
         coco_dataset = ImageFolder(data_path, self.transform)
         coco_dataset_split = random_split(coco_dataset, [120, 8])
         self.train_dataset, self.val_dataset = coco_dataset_split[0], coco_dataset_split[1]
