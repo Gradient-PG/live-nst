@@ -95,7 +95,7 @@ class FeedForward(pl.LightningModule):
 
         content_feature_maps, _ = self._feature_extractor(batch)
         optimized_image_batch = self._model(batch)
-        optimized_content_feature_maps, optimized_style_feature_maps = self._feature_extractor(batch)
+        optimized_content_feature_maps, optimized_style_feature_maps = self._feature_extractor(optimized_image_batch)
 
         content_loss = self._content_loss(content_feature_maps, optimized_content_feature_maps)
         style_loss = self._style_loss(self._target_style_gram_matrices, optimized_style_feature_maps)
