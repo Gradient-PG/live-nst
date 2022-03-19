@@ -143,12 +143,6 @@ class FeedForward(pl.LightningModule):
         self.logger.experiment.add_image(
             "result_image", optimized_image_batch[0].squeeze(0), global_step=self.global_step
         )
-        self.logger.experiment.add_image(
-            "result_image", optimized_image_batch[1].squeeze(0), global_step=self.global_step
-        )
-        self.logger.experiment.add_image(
-            "result_image", optimized_image_batch[2].squeeze(0), global_step=self.global_step
-        )
 
     def configure_optimizers(self):
         return torch.optim.Adam(self._model.parameters(), lr=self._learning_rate)
