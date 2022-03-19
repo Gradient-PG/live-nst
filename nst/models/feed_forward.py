@@ -53,7 +53,6 @@ class FeedForward(pl.LightningModule):
         )
         self._style_image_tensor = preprocess(style_image_tensor)
 
-        # TODO initialize transformer module
         self._model = TransformerNetwork()
 
         self._feature_extractor = FeatureExtractor(content_layers, style_layers)
@@ -93,18 +92,14 @@ class FeedForward(pl.LightningModule):
         self.logger.experiment.add_image("style_target", self._style_image_tensor.squeeze(0))
 
     def training_step(self, batch, batch_idx):
-        # TODO pass batch through feature extractor and save content representation
-        # TODO pass batch through transformer module
-        # TODO pass transformed batch through feature extractor and save content and style representation
-        # TODO compute content loss between original nad transformed batch content representation
-        # TODO compute style loss between style target features and transformed batch style representation
-        # TODO compute tv loss for transformed batch
 
-        # TODO log
+        content_feature_maps, _ = self._feature_extractor(batch)
+        optimized_image_batch = self._model(batch)
+        optimized_content_feature_maps, optimized_style_feature_maps = self._feature_extractor(optimized_image_batch)
 
-        content_loss = None  # self._content_loss(content_feature_maps, self._target_content_features_maps)
-        style_loss = None  # self._style_loss(style_feature_maps, self._target_style_gram_matrices)
-        tv_loss = None  # self._total_variation_loss(self._optimized_image)
+        content_loss = self._content_loss(content_feature_maps, optimized_content_feature_maps)
+        style_loss = self._style_loss(self._target_style_gram_matrices, optimized_style_feature_maps)
+        tv_loss = self._total_variation_loss(optimized_image_batch)
 
         weighted_content_loss = self._content_weight * content_loss
         weighted_style_loss = self._style_weight * style_loss
@@ -119,6 +114,4 @@ class FeedForward(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        # TODO configure optimizer for transformer module
-        # return torch.optim.Adam((self._optimized_image,), lr=self._learning_rate)
-        return None
+        return torch.optim.Adam(self._model.parameters(), lr=self._learning_rate)
