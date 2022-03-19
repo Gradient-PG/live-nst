@@ -110,10 +110,10 @@ class FeedForward(pl.LightningModule):
         weighted_tv_loss = self._total_variation_weight * tv_loss
         loss = weighted_content_loss + weighted_style_loss + weighted_tv_loss
 
-        self.log("loss/content", weighted_content_loss)
-        self.log("loss/style", weighted_style_loss)
-        self.log("loss/tv", weighted_tv_loss)
-        self.log("loss", loss)
+        self.log("training/loss/content", weighted_content_loss)
+        self.log("training/loss/style", weighted_style_loss)
+        self.log("training/loss/tv", weighted_tv_loss)
+        self.log("training/loss", loss)
 
         return loss
 
@@ -136,10 +136,10 @@ class FeedForward(pl.LightningModule):
         weighted_tv_loss = self._total_variation_weight * tv_loss
         loss = weighted_content_loss + weighted_style_loss + weighted_tv_loss
 
-        self.log("loss/content", weighted_content_loss)
-        self.log("loss/style", weighted_style_loss)
-        self.log("loss/tv", weighted_tv_loss)
-        self.log("loss", loss)
+        self.log("validation/loss/content", weighted_content_loss)
+        self.log("validation/loss/style", weighted_style_loss)
+        self.log("validation/loss/tv", weighted_tv_loss)
+        self.log("validation/loss", loss)
         self.logger.experiment.add_image(
             "result_image", optimized_image_batch[0].squeeze(0), global_step=self.global_step
         )
