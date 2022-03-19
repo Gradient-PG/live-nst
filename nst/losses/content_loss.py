@@ -1,14 +1,20 @@
 import torch
 from typing import List, Optional
 from nst.losses.mse_batch_loss import MSEBatchLoss
+import torch.nn as nn
 
 
 class ContentLoss:
-    def __init__(self):
+    def __init__(self, reduce_batch=False):
         """
         Loss between content target feature maps and input image feature maps.
+
+        :param reduce_batch: if false loss is computed for each image in batch
         """
-        self._loss = MSEBatchLoss()
+        if reduce_batch:
+            self._loss = nn.MSELoss()
+        else:
+            self._loss = MSEBatchLoss()
 
     def __call__(
         self, input_features: List[torch.Tensor], target_features: List[torch.Tensor]
@@ -20,7 +26,8 @@ class ContentLoss:
             (feature map shape [batch, channels, height, width])
         :param target_features: list of feature maps of the target image
             (feature map shape [batch, channels, height, width])
-        :returns: vector of len = batch representing content loss or None if image_features is empty
+        :returns: vector of len = batch representing style loss, scalar if reduce_batch is true
+            or None if image_features is empty
         """
         loss = None
 
