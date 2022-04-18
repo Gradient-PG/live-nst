@@ -16,10 +16,10 @@ class FeedForward(pl.LightningModule):
         self,
         style_image: Union[torch.Tensor, str],
         image_size: Tuple[int, int] = (256, 256),
-        learning_rate: float = 1e-1,
-        content_weight: float = 1e1,
-        style_weight: float = 1e7,
-        total_variation_weight: float = 1e-1,
+        learning_rate: float = 1e-3,
+        content_weight: float = 1.5e-6,
+        style_weight: float = 1,
+        total_variation_weight: float = 1e-6,
         content_layers: List[str] = None,
         style_layers: List[str] = None,
     ):
@@ -69,9 +69,9 @@ class FeedForward(pl.LightningModule):
             self._target_style_gram_matrices_names.append(name)
 
         # initialize loss functions and loss weights
-        self._content_loss = ContentLoss(reduce_batch=True)
-        self._style_loss = StyleLoss(reduce_batch=True)
-        self._total_variation_loss = TotalVariationLoss(reduce_batch=True)
+        self._content_loss = ContentLoss(reduce_batch=False)
+        self._style_loss = StyleLoss(reduce_batch=False)
+        self._total_variation_loss = TotalVariationLoss(reduce_batch=False)
 
         self._content_weight = content_weight
         self._style_weight = style_weight
@@ -96,8 +96,8 @@ class FeedForward(pl.LightningModule):
         content_feature_maps, _ = self._feature_extractor(batch)
         optimized_image_batch = self._model(batch)
 
-        with torch.no_grad():
-            optimized_image_batch[:] = optimized_image_batch.clamp(0, 1)
+        #with torch.no_grad():
+        #    optimized_image_batch[:] = optimized_image_batch.clamp(0, 1)
 
         optimized_content_feature_maps, optimized_style_feature_maps = self._feature_extractor(optimized_image_batch)
 
